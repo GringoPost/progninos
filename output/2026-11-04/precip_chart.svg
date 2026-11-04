@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" font-family="system-ui, sans-serif" font-size="12" role="img" aria-label="Daily rainfall: forecast vs past weather vs normal">
+<rect width="720" height="320" fill="#fff"/>
+<line x1="48" x2="704" y1="264.0" y2="264.0" stroke="#e5e5e5"/>
+<text x="42" y="268.0" text-anchor="end" fill="#555">0</text>
+<line x1="48" x2="704" y1="208.0" y2="208.0" stroke="#e5e5e5"/>
+<text x="42" y="212.0" text-anchor="end" fill="#555">5</text>
+<line x1="48" x2="704" y1="152.0" y2="152.0" stroke="#e5e5e5"/>
+<text x="42" y="156.0" text-anchor="end" fill="#555">10</text>
+<line x1="48" x2="704" y1="96.0" y2="96.0" stroke="#e5e5e5"/>
+<text x="42" y="100.0" text-anchor="end" fill="#555">15</text>
+<line x1="48" x2="704" y1="40.0" y2="40.0" stroke="#e5e5e5"/>
+<text x="42" y="44.0" text-anchor="end" fill="#555">20</text>
+<text x="12" y="26" fill="#333">mm</text>
+<rect x="57.4" y="215.8" width="23.0" height="48.2" fill="#2f6fb2"><title>4.3 mm</title></rect>
+<rect x="82.4" y="212.5" width="23.0" height="51.5" fill="#e08a2c"><title>4.6 mm</title></rect>
+<rect x="107.4" y="209.1" width="23.0" height="54.9" fill="#9a9a9a"><title>4.9 mm</title></rect>
+<text x="94.9" y="282" text-anchor="middle" fill="#333">Wed 28</text>
+<rect x="151.1" y="176.6" width="23.0" height="87.4" fill="#2f6fb2"><title>7.8 mm</title></rect>
+<rect x="176.1" y="211.4" width="23.0" height="52.6" fill="#e08a2c"><title>4.7 mm</title></rect>
+<rect x="201.1" y="208.0" width="23.0" height="56.0" fill="#9a9a9a"><title>5.0 mm</title></rect>
+<text x="188.6" y="282" text-anchor="middle" fill="#333">Thu 29</text>
+<rect x="244.8" y="176.6" width="23.0" height="87.4" fill="#2f6fb2"><title>7.8 mm</title></rect>
+<rect x="269.8" y="68.0" width="23.0" height="196.0" fill="#e08a2c"><title>17.5 mm</title></rect>
+<rect x="294.8" y="206.9" width="23.0" height="57.1" fill="#9a9a9a"><title>5.1 mm</title></rect>
+<text x="282.3" y="282" text-anchor="middle" fill="#333">Fri 30</text>
+<rect x="338.5" y="49.0" width="23.0" height="215.0" fill="#2f6fb2"><title>19.2 mm</title></rect>
+<rect x="363.5" y="108.3" width="23.0" height="155.7" fill="#e08a2c"><title>13.9 mm</title></rect>
+<rect x="388.5" y="206.9" width="23.0" height="57.1" fill="#9a9a9a"><title>5.1 mm</title></rect>
+<text x="376.0" y="282" text-anchor="middle" fill="#333">Sat 31</text>
+<rect x="432.2" y="42.2" width="23.0" height="221.8" fill="#2f6fb2"><title>19.8 mm</title></rect>
+<rect x="457.2" y="85.9" width="23.0" height="178.1" fill="#e08a2c"><title>15.9 mm</title></rect>
+<rect x="482.2" y="205.8" width="23.0" height="58.2" fill="#9a9a9a"><title>5.2 mm</title></rect>
+<text x="469.7" y="282" text-anchor="middle" fill="#333">Sun 01</text>
+<rect x="525.9" y="53.4" width="23.0" height="210.6" fill="#2f6fb2"><title>18.8 mm</title></rect>
+<rect x="550.9" y="221.4" width="23.0" height="42.6" fill="#e08a2c"><title>3.8 mm</title></rect>
+<rect x="575.9" y="205.8" width="23.0" height="58.2" fill="#9a9a9a"><title>5.2 mm</title></rect>
+<text x="563.4" y="282" text-anchor="middle" fill="#333">Mon 02</text>
+<rect x="619.7" y="157.6" width="23.0" height="106.4" fill="#2f6fb2"><title>9.5 mm</title></rect>
+<rect x="644.6" y="240.5" width="23.0" height="23.5" fill="#e08a2c"><title>2.1 mm</title></rect>
+<rect x="669.6" y="203.5" width="23.0" height="60.5" fill="#9a9a9a"><title>5.4 mm</title></rect>
+<text x="657.1" y="282" text-anchor="middle" fill="#333">Tue 03</text>
+<rect x="48" y="300" width="12" height="12" fill="#2f6fb2"/><text x="64" y="310" fill="#333">Forecast 24 h ahead</text>
+<rect x="207.39999999999998" y="300" width="12" height="12" fill="#e08a2c"/><text x="223.39999999999998" y="310" fill="#333">Past weather (model-estimated)</text>
+<rect x="439.4" y="300" width="12" height="12" fill="#9a9a9a"/><text x="455.4" y="310" fill="#333">Normal (ERA5 1991–2020)</text>
+</svg>
