@@ -1,0 +1,240 @@
+<title>Progniños Feasibility</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: single reading column, a verdict band up top, the sample reader report set apart as a "proof" sheet */
+:root{
+  --bg:#f6f7f8; --paper:#ffffff; --fg:#1d2329; --muted:#5c6670; --line:#dde2e6;
+  --accent:#2c5d8a; --ochre:#b8741a; --norm:#8d99a3; --warn-bg:#fbf1e3; --ok:#2f7a4f; --bad:#a8432f;
+  --display:"Fraunces",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14181c; --paper:#1b2026; --fg:#e4e8eb; --muted:#9aa5ae; --line:#2e353c;
+  --accent:#7fb0dc; --ochre:#e0a352; --norm:#6f7b85; --warn-bg:#2b2318; --ok:#6fc391; --bad:#e58a74; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14181c; --paper:#1b2026; --fg:#e4e8eb; --muted:#9aa5ae; --line:#2e353c;
+  --accent:#7fb0dc; --ochre:#e0a352; --norm:#6f7b85; --warn-bg:#2b2318; --ok:#6fc391; --bad:#e58a74; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body)}
+.wrap{max-width:820px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);font-weight:600;text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:2.1rem} h2{font-size:1.35rem;margin-bottom:10px} h3{font-size:1.05rem;margin:18px 0 6px}
+p{margin:0 0 10px;max-width:68ch} ul{margin:0 0 10px;padding-left:20px} li{margin-bottom:4px;max-width:66ch}
+.eyebrow{font:600 12px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.sub{color:var(--muted);margin-top:6px}
+.verdict{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:20px 22px;display:grid;gap:8px}
+.verdict .v{font-family:var(--display);font-size:1.6rem;color:var(--ochre)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12.5px} tr:last-child td{border-bottom:0}
+td.n{text-align:right;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.ok{color:var(--ok)} .bad{color:var(--bad)} .mid{color:var(--ochre)}
+code,.mono{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+.note{font-size:13px;color:var(--muted)}
+.flag{background:var(--warn-bg);border-left:3px solid var(--ochre);padding:12px 16px;border-radius:0 6px 6px 0}
+.proof{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:22px;display:flex;flex-direction:column;gap:6px}
+.proof h2{font-size:1.6rem;margin:0} .proof h3{font-family:var(--body);font-size:1rem}
+svg{width:100%;height:auto;display:block;font-family:var(--body)}
+svg .grid{stroke:var(--line)} svg .ax{fill:var(--muted);font-size:11px}
+svg .b-fc{fill:var(--accent)} svg .b-past{fill:var(--ochre)} svg .b-norm{fill:var(--norm)}
+svg .rainy{fill:var(--accent);font-size:10.5px} svg .dry{fill:var(--muted);font-size:10.5px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+a{color:var(--accent)} a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">GringoPost · Technical feasibility · October 30, 2026 · Prepared by Ersin</div>
+  <h1>Progniños: Cuenca forecasts tested against real data</h1>
+  <p class="sub">A first test using the Open-Meteo APIs, the Cuenca airport weather station and 1991–2020 climate data. Every number on this page comes from live API output.</p>
+</header>
+
+<section class="verdict" aria-label="Verdict">
+  <div class="eyebrow">G. The answer</div>
+  <div class="v">CONDITIONAL YES</div>
+  <p><b>Automation works and is cheap.</b> The script downloads the data, matches the dates, computes the differences and produces the chart and the English report in a few seconds. It can be rerun for any date.</p>
+  <p><b>The problem is the data itself, specifically rainfall.</b> Open-Meteo's "past weather" is a model estimate, not a measurement. For Cuenca, the models show 1,800–2,000 mm of rain a year. Published figures for the city are around 800–900 mm, so the models show roughly twice the real rainfall. Temperature is in better shape: real airport measurements can be collected automatically.</p>
+  <p><b>The condition:</b> until we find real rain-gauge data (INAMHI, ETAPA or Universidad de Cuenca), daily and weekly rainfall should be shown to readers in relative terms ("wetter or drier than normal"), not in millimetres.</p>
+  <p><b>Good news from a second test:</b> CHIRPS, a free satellite-plus-rain-gauge dataset, gives realistic monthly rainfall for Cuenca (888 mm a year on average for 1991–2020). It can answer "Was last month wetter than normal?" in real millimetres, which is the question that matters most for El Niño coverage.</p>
+</section>
+
+<section>
+  <h2>Key findings</h2>
+  <div class="tbl"><table>
+    <tr><th>Question</th><th>Result</th><th>Details</th></tr>
+    <tr><td>Can we retrieve past forecasts later?</td><td><span class="pill ok">Yes</span></td><td>The Previous Runs API has hourly data since January 2024. <code>_previous_day1</code> is the value the model predicted 24 hours before each hour. It is a fixed lead time, <i>not</i> a forecast published at one specific time.</td></tr>
+    <tr><td>Past chance of rain (%)</td><td><span class="pill bad">No</span></td><td>Previous Runs returns this field empty for Cuenca. Fix: the script now keeps its own daily forecast archive, including the probability. The first entry was saved today.</td></tr>
+    <tr><td>Measured rainfall</td><td><span class="pill bad">Not automatic</span></td><td>The airport METAR reports do not include rain amounts, only rain / no-rain weather codes. The Cuenca station on Meteostat (84270) shows 1,300–1,950 mm a year and stops in March 2026. It may be filled with model data, so it is not reliable.</td></tr>
+    <tr><td>Measured temperature</td><td><span class="pill ok">Yes</span></td><td>Hourly METAR reports from the airport (SECU), free through the Iowa Environmental Mesonet. Limits: only about 06:00–22:00, in whole degrees.</td></tr>
+    <tr><td>Past weather (model)</td><td><span class="pill mid">Available, limited</span></td><td>For recent days the Historical API uses ECMWF IFS (no delay). ERA5 arrives 5–7 days late. The two models can differ by a factor of four for the same week (Oct 13–19: IFS 36.1 mm, ERA5 8.6 mm).</td></tr>
+    <tr><td>Seasonal normals</td><td><span class="pill mid">Available, model-based</span></td><td>1991–2020 (30 years, the WMO standard period) can be computed from ERA5. But ERA5 also shows about twice the real rainfall. Temperature normals are more useful.</td></tr>
+    <tr><td>Location</td><td><span class="pill ok">OK</span></td><td>-2.9001 / -79.0059 works for central Cuenca. The API uses the nearest grid point (-2.917 / -78.994, 2,551 m), and forecast and past data come from the same point. The airport is about 2 km to the northeast.</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Main technical problems (F)</h2>
+  <ul>
+    <li><b>Comparing a model with a model.</b> When the forecast and the "past weather" come from the same model family, the scores look artificially good. Daily highs differ by 0.5 °C against the model but 2.6 °C against the airport. Rain / no-rain days were right on 7 of 7 days against the model but only 4 of 7 against airport reports.</li>
+    <li><b>Rain amounts are unreliable.</b> The models show rain in Cuenca almost every day. On Oct 23–25 they showed 6–12 mm a day; the airport reported no rain on those days.</li>
+    <li><b>Forecasts run consistently cool.</b> Forecast daily highs were 2.6 °C below the airport readings on average (ERA5 averaged -1.3 °C over 2021–2025). Because the error is consistent, it can be corrected later.</li>
+    <li><b>Chance of rain is always 96–99%.</b> The probabilities for the next 3 days tell readers nothing, and phrases like "heavy rain" could look alarmist. That runs against the whole idea of the project.</li>
+    <li><b>Two different data sources.</b> The last week comes from IFS and the normal from ERA5, so the two are not fully comparable.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How this connects to El Niño</h2>
+  <p>This first test checks day-to-day weather, and El Niño is not in it directly. The link is the question readers will ask over the coming months: <b>"Is El Niño actually making Cuenca wetter?"</b></p>
+  <ul>
+    <li><b>The question Progniños is built to answer.</b> El Niño is an ocean pattern that plays out over months. Pacific forecasts don't tell us how much rain falls in Cuenca, which sits high in the Andes. What we can measure is whether the weeks and months here are actually wetter or drier than normal. That is section C, "Compared with normal", and it is the honest answer to alarmist El Niño headlines.</li>
+    <li><b>Why the rainfall problem matters most here.</b> If the models already show twice the real rainfall, then "much wetter than normal" may simply be model error. That is the claim we must never get wrong while El Niño is in the news. Real rain-gauge data is the key to this question.</li>
+    <li><b>An easy addition.</b> NOAA (CPC) and Columbia University's IRI publish regular El Niño bulletins. A small "El Niño status" box can be pulled from them automatically and shown next to the local data. The bulletin covers the ocean; the local data shows what is happening in Cuenca. Together they work against both alarm and complacency.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Second test: free data sources</h2>
+  <p>We tested whether the whole system can run on free sources that allow commercial use.</p>
+  <div class="tbl"><table>
+    <tr><th>Source</th><th>Result</th><th>Details</th></tr>
+    <tr><td>MET Norway forecast</td><td><span class="pill ok">Works, free</span></td><td>No API key needed; attribution required. For Cuenca it gives almost the same numbers as Open-Meteo (Oct 31: 18.4 mm vs 18.6 mm), because both are based on the ECMWF model. So it has the same rainfall overestimate. No chance-of-rain figure for Ecuador. Added to the script as a "second opinion" column and saved in the archive.</td></tr>
+    <tr><td><b>CHIRPS</b> monthly rainfall (satellite + rain gauges, ~5 km)</td><td><span class="pill ok">Works, free</span></td><td>1991–2020 average: <b>888 mm a year</b> (range 627–1,106 mm), in line with the 800–900 mm published for Cuenca. October 2025: CHIRPS 80 mm with 13 rain days; the models showed 188–209 mm with 28–30 rain days. Published 3–6 weeks after the month ends (September 2026 is the latest month now).</td></tr>
+    <tr><td>CHIRPS daily</td><td><span class="pill mid">Limited</span></td><td>Realistic monthly totals, but no better than the models at matching single rainy days at the airport. Use it for months, not days.</td></tr>
+    <tr><td>NASA GPM IMERG (satellite)</td><td><span class="pill mid">Needs an account</span></td><td>Free, but requires a NASA Earthdata login. Not tested yet.</td></tr>
+    <tr><td>NASA POWER</td><td><span class="pill bad">Not useful</span></td><td>Model-based (GEOS-IT), shows rain almost every day, like the other models.</td></tr>
+    <tr><td>ClimateSERV</td><td><span class="pill bad">Not working</span></td><td>Returned empty results for Cuenca.</td></tr>
+  </table></div>
+  <p><b>What this changes:</b> the report now has a "Last full month" section based on CHIRPS. Example from today's automatic run: <i>Rain in Cuenca in September 2026: 55 mm. The 1991–2020 average for September is 39 mm (142% of normal), wetter than 27 of 30 reference years.</i> For the last 7 days, there is still no free, real rainfall measurement.</p>
+</section>
+
+<section class="proof" aria-label="Sample report">
+  <div class="eyebrow">A. Sample reader report (generated automatically)</div>
+  <h2>Progniños</h2>
+  <p class="sub">Cuenca weather forecasts, checked against what happened. Report for Friday, October 30, 2026.</p>
+
+  <h3>A. Looking ahead – next 3 days</h3>
+  <div class="tbl"><table>
+    <tr><th>Day</th><th>High</th><th>Low</th><th>Chance of rain</th><th>Expected rain</th></tr>
+    <tr><td>Sat Oct 31</td><td class="n">19.0°C</td><td class="n">12.2°C</td><td class="n">99%</td><td class="n">18.6 mm</td></tr>
+    <tr><td>Sun Nov 1</td><td class="n">21.4°C</td><td class="n">12.5°C</td><td class="n">99%</td><td class="n">19.1 mm</td></tr>
+    <tr><td>Mon Nov 2</td><td class="n">20.5°C</td><td class="n">11.1°C</td><td class="n">96%</td><td class="n">13.6 mm</td></tr>
+  </table></div>
+  <p class="note">"Chance of rain" is the probability of any rain during the day, not an amount.</p>
+
+  <h3>B. Looking back – last 7 days (chart B)</h3>
+  <div class="legend"><span style="--c:var(--accent)">Forecast, 24 h ahead</span><span style="--c:var(--ochre)">Past weather (model-estimated)</span><span style="--c:var(--norm)">Normal (ERA5 1991–2020)</span></div>
+  <svg viewBox="0 0 680 280" role="img" aria-label="Daily rain, 23–29 Oct 2026: forecast, past weather, normal">
+<line class="grid" x1="40" x2="670" y1="240.0" y2="240.0"/><text class="ax" x="34" y="244.0" text-anchor="end">0</text>
+<line class="grid" x1="40" x2="670" y1="166.7" y2="166.7"/><text class="ax" x="34" y="170.7" text-anchor="end">5</text>
+<line class="grid" x1="40" x2="670" y1="93.3" y2="93.3"/><text class="ax" x="34" y="97.3" text-anchor="end">10</text>
+<line class="grid" x1="40" x2="670" y1="20.0" y2="20.0"/><text class="ax" x="34" y="24.0" text-anchor="end">15</text>
+<rect class="b-fc" x="49.9" y="109.5" width="21.4" height="130.5" rx="1.5"><title>8.9 mm</title></rect>
+<rect class="b-past" x="73.3" y="141.7" width="21.4" height="98.3" rx="1.5"><title>6.7 mm</title></rect>
+<rect class="b-norm" x="96.7" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<text class="ax" x="85.0" y="256" text-anchor="middle">Fri 23</text><text class="dry" x="85.0" y="272" text-anchor="middle">○ dry</text>
+<rect class="b-fc" x="139.9" y="143.2" width="21.4" height="96.8" rx="1.5"><title>6.6 mm</title></rect>
+<rect class="b-past" x="163.3" y="69.9" width="21.4" height="170.1" rx="1.5"><title>11.6 mm</title></rect>
+<rect class="b-norm" x="186.7" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<text class="ax" x="175.0" y="256" text-anchor="middle">Sat 24</text><text class="dry" x="175.0" y="272" text-anchor="middle">○ dry</text>
+<rect class="b-fc" x="229.9" y="112.4" width="21.4" height="127.6" rx="1.5"><title>8.7 mm</title></rect>
+<rect class="b-past" x="253.3" y="140.3" width="21.4" height="99.7" rx="1.5"><title>6.8 mm</title></rect>
+<rect class="b-norm" x="276.7" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<text class="ax" x="265.0" y="256" text-anchor="middle">Sun 25</text><text class="dry" x="265.0" y="272" text-anchor="middle">○ dry</text>
+<rect class="b-fc" x="319.9" y="53.7" width="21.4" height="186.3" rx="1.5"><title>12.7 mm</title></rect>
+<rect class="b-past" x="343.3" y="68.4" width="21.4" height="171.6" rx="1.5"><title>11.7 mm</title></rect>
+<rect class="b-norm" x="366.7" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<text class="ax" x="355.0" y="256" text-anchor="middle">Mon 26</text><text class="rainy" x="355.0" y="272" text-anchor="middle">● rain</text>
+<rect class="b-fc" x="409.9" y="203.3" width="21.4" height="36.7" rx="1.5"><title>2.5 mm</title></rect>
+<rect class="b-past" x="433.3" y="191.6" width="21.4" height="48.4" rx="1.5"><title>3.3 mm</title></rect>
+<rect class="b-norm" x="456.7" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<text class="ax" x="445.0" y="256" text-anchor="middle">Tue 27</text><text class="rainy" x="445.0" y="272" text-anchor="middle">● rain</text>
+<rect class="b-fc" x="499.9" y="176.9" width="21.4" height="63.1" rx="1.5"><title>4.3 mm</title></rect>
+<rect class="b-past" x="523.3" y="172.5" width="21.4" height="67.5" rx="1.5"><title>4.6 mm</title></rect>
+<rect class="b-norm" x="546.7" y="168.1" width="21.4" height="71.9" rx="1.5"><title>4.9 mm</title></rect>
+<text class="ax" x="535.0" y="256" text-anchor="middle">Wed 28</text><text class="rainy" x="535.0" y="272" text-anchor="middle">● rain</text>
+<rect class="b-fc" x="589.9" y="125.6" width="21.4" height="114.4" rx="1.5"><title>7.8 mm</title></rect>
+<rect class="b-past" x="613.3" y="171.1" width="21.4" height="68.9" rx="1.5"><title>4.7 mm</title></rect>
+<rect class="b-norm" x="636.7" y="166.7" width="21.4" height="73.3" rx="1.5"><title>5.0 mm</title></rect>
+<text class="ax" x="625.0" y="256" text-anchor="middle">Thu 29</text><text class="rainy" x="625.0" y="272" text-anchor="middle">● rain</text>
+</svg>
+  <div class="tbl"><table>
+    <tr><th>Day</th><th>Forecast rain</th><th>Past weather*</th><th>Difference</th><th>Airport: rain?</th><th>High: forecast / airport</th></tr>
+    <tr><td>Fri Oct 23</td><td class="n">8.9 mm</td><td class="n">6.7 mm</td><td class="n">−2.2 mm</td><td>no</td><td class="n">21° / 23°</td></tr>
+    <tr><td>Sat Oct 24</td><td class="n">6.6 mm</td><td class="n">11.6 mm</td><td class="n">+5.0 mm</td><td>no</td><td class="n">21° / 22°</td></tr>
+    <tr><td>Sun Oct 25</td><td class="n">8.7 mm</td><td class="n">6.8 mm</td><td class="n">−1.9 mm</td><td>no</td><td class="n">22° / 27°</td></tr>
+    <tr><td>Mon Oct 26</td><td class="n">12.7 mm</td><td class="n">11.7 mm</td><td class="n">−1.0 mm</td><td>yes</td><td class="n">23° / 26°</td></tr>
+    <tr><td>Tue Oct 27</td><td class="n">2.5 mm</td><td class="n">3.3 mm</td><td class="n">+0.8 mm</td><td>yes</td><td class="n">23° / 26°</td></tr>
+    <tr><td>Wed Oct 28</td><td class="n">4.3 mm</td><td class="n">4.6 mm</td><td class="n">+0.3 mm</td><td>yes</td><td class="n">22° / 26°</td></tr>
+    <tr><td>Thu Oct 29</td><td class="n">7.8 mm</td><td class="n">4.7 mm</td><td class="n">−3.1 mm</td><td>yes</td><td class="n">21° / 21°</td></tr>
+  </table></div>
+  <p class="note">* Model-based estimate (Open-Meteo Historical Weather), not a rain-gauge reading. Airport = real METAR observations at Mariscal Lamar.</p>
+
+  <h3>C. Compared with normal</h3>
+  <p>Model-estimated rain this week: <b>49.4 mm</b>, against a 1991–2020 average of <b>32.4 mm</b> for the same dates (middle half of years: 20.0–42.8 mm). By the models' own yardstick, this week was <b>wetter than usual</b>, wetter than 26 of 30 reference years. Models overstate Cuenca rainfall, so read this as relative, not exact.</p>
+
+  <h3>D. Forecast accuracy</h3>
+  <ul>
+    <li>Daytime highs: forecasts were 2.6 °C too cool on average, compared with the airport.</li>
+    <li>Rain or no rain: right on 4 of 7 days, compared with airport reports.</li>
+    <li>Seven days is too short to judge a forecast; scores become meaningful after several months.</li>
+  </ul>
+
+  <h3>E. Data sources</h3>
+  <p class="note">Forecasts: Open-Meteo Forecast and Previous Runs APIs. Past weather: Open-Meteo Historical Weather API (ECMWF IFS). Normals: ERA5, Copernicus Climate Change Service. Airport: METAR via Iowa Environmental Mesonet. <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0).</p>
+</section>
+
+<section>
+  <h2>APIs and data sources used (C)</h2>
+  <div class="tbl"><table>
+    <tr><th>Data</th><th>Endpoint</th><th>Nature</th></tr>
+    <tr><td>3-day forecast + probability</td><td><code>api.open-meteo.com/v1/forecast</code></td><td>Live model forecast (best_match)</td></tr>
+    <tr><td>Forecast made 24 h earlier</td><td><code>previous-runs-api.open-meteo.com/v1/forecast</code></td><td>Hourly; we aggregate to days</td></tr>
+    <tr><td>Past weather</td><td><code>archive-api.open-meteo.com/v1/archive</code></td><td>Model / reanalysis (IFS 9 km, ERA5 25 km)</td></tr>
+    <tr><td>Airport observations</td><td><code>mesonet.agron.iastate.edu/cgi-bin/request/asos.py</code></td><td>Real observations: temperature + weather codes</td></tr>
+    <tr><td>Climate normal</td><td>Same archive API, <code>models=era5</code>, 1991–2020</td><td>Reanalysis; downloaded once and stored</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Licensing and cost (E)</h2>
+  <ul>
+    <li><b>The free plan is not an option.</b> Open-Meteo's terms explicitly treat websites that show ads as commercial.</li>
+    <li><b>A Professional plan is needed.</b> According to the pricing page, the Historical Weather and Ensemble APIs require Professional or higher, and Previous Runs is listed in the same group. The Standard plan covers only the live forecast.</li>
+    <li><b>Price:</b> the pricing page itself shows no figures. Open-Meteo's own blog and third-party listings give <b>Standard about $29 a month</b> and <b>Professional about $99 a month</b>. <span class="mid">Not confirmed:</span> check the currency and VAT in the customer portal.</li>
+    <li><b>Free route:</b> MET Norway (forecast) + our own archive (past forecasts) + airport METAR (temperature) + CHIRPS (monthly rain and normals) + GitHub Actions (daily run) = <b>$0 a month</b>. The trade-off is more sources to maintain and no chance-of-rain figure.</li>
+    <li><b>Recommended:</b> Open-Meteo Standard (about $29 a month) for a simple, reliable forecast including chance of rain, plus the free sources for everything else. Professional is not needed. It is also worth asking Open-Meteo about a discount for local media.</li>
+    <li><b>Usage is very low:</b> about 5 calls a day, about 150 a month. Even the smallest plan is far more than enough.</li>
+    <li><b>Cheaper alternative:</b> our own forecast archive can replace Previous Runs. If real measurements come from a station, we don't need the Historical API either, and the Standard plan would be enough. The climate normals can be a one-time download; we should ask Open-Meteo whether that needs a commercial licence.</li>
+    <li><b>Attribution:</b> CC BY 4.0. A "Weather data by Open-Meteo.com" link wherever the data appears, plus Copernicus attribution for ERA5.</li>
+    <li><b>Server:</b> a scheduled job that runs once a day. No extra cost on an existing server, or a few dollars a month.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>The code (D) and how it works</h2>
+  <p><code>progninos.py</code> uses only the Python standard library, with no extra packages. On every run it:</p>
+  <ul>
+    <li>Adds today's forecast to its own archive (<code>archive/forecast_log.csv</code>).</li>
+    <li>Fetches the forecasts made 24 h earlier for the last 7 days, the past weather and the airport observations, and computes daily totals in local time.</li>
+    <li>Computes the differences and accuracy scores, and produces a chart (SVG), a table (CSV) and the English report (HTML).</li>
+    <li>Runs automatic checks: missing days, implausible values, grid point and time zone match, whether station data is present. If a check fails, the report is marked "needs human review".</li>
+    <li>Was rerun and tested for an earlier date with <code>--date 2026-10-20</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Recommended next steps</h2>
+  <ul>
+    <li><b>Now:</b> schedule the script to run every day. If the archive starts now, in a few months we will have a real, independent forecast record.</li>
+    <li><b>Real rainfall data:</b> contact INAMHI, ETAPA EP and Universidad de Cuenca. This is the key to the project.</li>
+    <li><b>Questions for Open-Meteo:</b> the price of the Professional plan, and whether the Standard plan allows forecast use plus a one-time climate-normal download.</li>
+    <li><b>Reader-facing text:</b> rule-based templates that describe rainfall in relative terms and avoid "heavy rain" wording driven by 90%+ probabilities.</li>
+  </ul>
+  <p class="note">These findings are based on 7- and 14-day samples. The size of the rainfall and temperature errors should be measured again over a longer period. Cuenca's annual rainfall figures come from secondary sources (about 790–920 mm); INAMHI's official normal has not yet been verified.</p>
+</section>
+
+</div>

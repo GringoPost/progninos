@@ -1,0 +1,80 @@
+{
+  "accuracy": {
+    "tmax_vs_model": {
+      "n": 7,
+      "mae": 0.5,
+      "bias": 0.0
+    },
+    "tmin_vs_model": {
+      "n": 7,
+      "mae": 0.7,
+      "bias": -0.1
+    },
+    "tmax_vs_station": {
+      "n": 7,
+      "mae": 2.6,
+      "bias": -2.6
+    },
+    "tmin_vs_station": {
+      "n": 7,
+      "mae": 1.8,
+      "bias": -1.8
+    },
+    "precip_vs_model": {
+      "n": 7,
+      "mae": 1.6,
+      "bias": -0.2
+    },
+    "rain_yes_no_vs_station": {
+      "n": 7,
+      "correct": 4
+    },
+    "rain_yes_no_vs_model": {
+      "n": 7,
+      "correct": 7
+    },
+    "precip_total": {
+      "forecast": 50.4,
+      "past": 51.6
+    }
+  },
+  "week_normal": {
+    "mean": 33.0,
+    "p25": 19.5,
+    "p75": 40.2,
+    "years": 30
+  },
+  "checks": [
+    {
+      "check": "complete_lookback",
+      "status": "pass",
+      "detail": "days with missing values: none"
+    },
+    {
+      "check": "precip_plausible",
+      "status": "pass",
+      "detail": "daily rain between 0 and 80 mm"
+    },
+    {
+      "check": "temp_plausible",
+      "status": "pass",
+      "detail": "temperatures between -2 and 32 \u00b0C"
+    },
+    {
+      "check": "same_grid_point",
+      "status": "pass",
+      "detail": "historical grid point -2.917399, -78.994354 (elev. 2551.0 m)"
+    },
+    {
+      "check": "timezone",
+      "status": "pass",
+      "detail": "all requests in America/Guayaquil"
+    },
+    {
+      "check": "station_available",
+      "status": "pass",
+      "detail": "airport METAR data on 7/7 days"
+    }
+  ],
+  "sources_note": "ERA5 reanalysis arrives about 5\u20137 days late, so recent days use the IFS model. On 2 overlapping days the two models' rain totals were 13.6 mm (IFS) vs 3.9 mm (ERA5)."
+}
