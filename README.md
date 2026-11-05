@@ -11,8 +11,9 @@ GitHub Actions runs `progninos.py` every morning at 07:00 Cuenca time (`.github/
 1. Saves today's MET Norway forecast to `archive/forecast_log.csv`. This is our own forecast record, and it grows every day.
 2. Compares the forecasts we saved a day in advance with real airport observations (METAR, Mariscal Lamar) for the last 7 days.
 3. Compares the last 12 months of rain with the 1991–2020 normal (CHIRPS).
-4. Writes the report to `output/<date>/`: `report.html`, `precip_chart.svg`, `monthly_chart.svg`, `lookback.csv` and `checks.json`.
+4. Writes the report to `output/<date>/`: `report.html`, `precip_chart.svg`, `monthly_chart.svg`, `lookback.csv`, `checks.json`, and `site.html` (the version for the GringoPost page).
 5. Commits the new files back to this repository.
+6. Copies `site.html` into one WordPress page (`publish_wp.py`), once that is set up. See [SETUP-WORDPRESS.md](SETUP-WORDPRESS.md).
 
 If any automatic check fails, the report is marked "Needs human review".
 

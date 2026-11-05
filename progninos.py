@@ -355,7 +355,8 @@ def month_html(recent, normals):
             f"<b>{compare_phrase(total, nm)}</b>, wetter than {below} of {nm['years']} reference years.</p>")
 
 
-def html_report(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start):
+def report_parts(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start):
+    """Report sections A-E, the review flag and the internal checks table, as separate HTML pieces."""
     ahead = [(d, met[d]) for d in sorted(met) if d > report.isoformat()][:3]
     tn, tl, rn = acc["tmax_vs_station"], acc["tmin_vs_station"], acc["rain_yes_no_vs_station"]
     failed = [c for c in checks if c["status"] == "fail"]
@@ -385,19 +386,11 @@ def html_report(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, 
                f"<p>No saved forecasts yet for these days. Our forecast archive started on {archive_start}; "
                f"scores appear once it covers the last week.</p>")
 
-    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Progniños – Cuenca – {report}</title>
-<style>
-body{{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:860px;margin:24px auto;padding:0 16px;color:#222;line-height:1.5}}
-h1{{margin-bottom:0}} .sub{{color:#666;margin-top:4px}} table{{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}}
-th,td{{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}} th{{background:#f4f4f4}}
-.wrap{{overflow-x:auto}} .note{{font-size:13px;color:#555}} .flag{{background:#fff4e5;border-left:4px solid #e08a2c;padding:8px 12px}}
-svg{{width:100%;height:auto}}
-</style></head><body>
-<h1>Progniños</h1>
-<p class="sub">Cuenca weather forecasts, checked against what happened. Report for {report.strftime('%A, %B %d, %Y')}.</p>
-{'<p class="flag"><b>Needs human review:</b> ' + ', '.join(c['check'] for c in failed) + '</p>' if failed else ''}
+    flag = ('<p class="flag"><b>Needs human review:</b> ' + ', '.join(c['check'] for c in failed) + '</p>'
+            if failed else '')
+    checks_html = f"""<h2>Automatic quality checks (internal)</h2>
+<div class="wrap"><table>{tr(["Check", "Status", "Detail"], True)}{check_rows}</table></div>"""
+    body = f"""<p class="sub">Cuenca weather forecasts, checked against what happened. Report for {report.strftime('%A, %B %d, %Y')}.</p>
 
 <h2>A. Looking ahead – next 3 days</h2>
 <div class="wrap"><table>{tr(["Day", "High", "Low", "Forecast rain", "Summary"], True)}{ahead_rows}</table></div>
@@ -427,11 +420,62 @@ about 890 mm a year, matches published figures for Cuenca. It is published 3–6
 <li>Airport observations: METAR reports from Mariscal Lamar (SECU) via the Iowa Environmental Mesonet.</li>
 <li>Monthly rainfall and normals: CHIRPS v2.0, UC Santa Barbara Climate Hazards Center, via the IRI Data Library.</li>
 <li>Location: {LAT}, {LON} (central Cuenca), time zone {TZ}. Weather can differ a lot across the city.</li>
-</ul>
+</ul>"""
+    return body, flag, checks_html
 
-<h2>Automatic quality checks (internal)</h2>
-<div class="wrap"><table>{tr(["Check", "Status", "Detail"], True)}{check_rows}</table></div>
+
+REPORT_CSS = """
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:860px;margin:24px auto;padding:0 16px;color:#222;line-height:1.5}
+h1{margin-bottom:0} .sub{color:#666;margin-top:4px} table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+th,td{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top} th{background:#f4f4f4}
+.wrap{overflow-x:auto} .note{font-size:13px;color:#555} .flag{background:#fff4e5;border-left:4px solid #e08a2c;padding:8px 12px}
+svg{width:100%;height:auto}
+"""
+
+# For the GringoPost page. Every rule is scoped to .progninos so it cannot change the rest of the site;
+# fonts and text colours come from the theme.
+SITE_CSS = """
+.progninos{max-width:860px;margin:0 auto;padding:0 16px;box-sizing:border-box;line-height:1.5}
+.progninos h2{margin:28px 0 8px}
+.progninos .sub{opacity:.75;margin-top:4px}
+.progninos table{border-collapse:collapse;width:100%;font-size:15px;margin:8px 0}
+.progninos th,.progninos td{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}
+.progninos th{background:#f4f4f4;color:#222}
+.progninos .wrap{overflow-x:auto}
+.progninos .note{font-size:14px;opacity:.8}
+.progninos .chart{background:#fff;margin:12px 0;overflow-x:auto}
+.progninos svg{display:block;width:100%;height:auto;min-width:560px}
+"""
+
+
+def html_report(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start):
+    """Stand-alone page, including the internal quality checks."""
+    body, flag, checks_html = report_parts(report, met, rows, acc, checks, daily_svg, monthly_svg,
+                                           recent, normals, archive_start)
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Progniños – Cuenca – {report}</title>
+<style>{REPORT_CSS}</style></head><body>
+<h1>Progniños</h1>
+{flag}
+{body}
+{checks_html}
 </body></html>"""
+
+
+def site_fragment(report, run_utc, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start):
+    """Content for the GringoPost page: one Custom HTML block, without the page title (WordPress shows it)
+    and without the internal checks."""
+    body, _, _ = report_parts(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start)
+    stamp = run_utc.astimezone(LOCAL).strftime("%B %d, %Y at %H:%M")
+    return f"""<!-- wp:html -->
+<div class="progninos">
+<style>{SITE_CSS}</style>
+{body}
+<p class="note">Updated automatically every morning. Last update: {stamp} (Cuenca time).</p>
+</div>
+<!-- /wp:html -->
+"""
 
 
 # ---- Main -------------------------------------------------------------------
@@ -493,6 +537,8 @@ def main():
     (out / "checks.json").write_text(json.dumps(
         {"accuracy": acc, "checks": checks, "chirps_recent": recent}, indent=2), encoding="utf-8")
     (out / "report.html").write_text(html_report(report, met, rows, acc, checks, daily_svg, monthly_svg,
+                                                 recent, normals, archive_start), encoding="utf-8")
+    (out / "site.html").write_text(site_fragment(report, now_utc, met, rows, acc, checks, daily_svg, monthly_svg,
                                                  recent, normals, archive_start), encoding="utf-8")
 
     print(json.dumps(acc, indent=1))
