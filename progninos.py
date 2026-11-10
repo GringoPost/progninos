@@ -52,7 +52,7 @@ def get_text(url, headers=None, retries=3):
                 body = r.read()
                 if r.headers.get("Content-Encoding") == "gzip":
                     body = gzip.decompress(body)
-                return body.decode("utf-8")
+                return body.decode("utf-8", "replace")
         except Exception:
             if attempt == retries - 1:
                 raise
@@ -137,6 +137,50 @@ def chirps_recent(report, n=12):
         months = [(py, i + 1, round(v, 1)) for i, v in enumerate(prev)] + months
         py -= 1
     return months[-n:]
+
+
+CPC = "https://www.cpc.ncep.noaa.gov"
+
+
+def fetch_enso():
+    """Official El Niño status from NOAA's Climate Prediction Center (US government work, public domain).
+    Alert status and synopsis from the monthly ENSO discussion, latest ONI, and the latest weekly sea surface
+    temperature anomalies for Niño 1+2 (off the coast of Ecuador and Peru) and Niño 3.4 (central Pacific).
+    Falls back to the last good copy in cache/enso.json if NOAA is unreachable."""
+    import html as htmlmod
+    import re
+    cache = CACHE / "enso.json"
+    ua = {"User-Agent": MET_UA}
+    try:
+        page = get_text(f"{CPC}/products/analysis_monitoring/enso_advisory/ensodisc.shtml", ua)
+        text = htmlmod.unescape(re.sub(r"<[^>]+>", " ", page)).replace("\xa0", " ")
+        text = re.sub(r"\s+", " ", text)
+        issued = re.search(r"issued by CLIMATE PREDICTION CENTER\S* (\d{1,2} \w+ \d{4})", text)
+        status = re.search(r"ENSO Alert System Status: (.+?) Synopsis:", text)
+        synopsis = re.search(r"Synopsis: (.+?\.) ", text)
+
+        oni_rows = [ln.split() for ln in get_text(f"{CPC}/data/indices/oni.ascii.txt", ua).splitlines()[1:]
+                    if ln.strip()]
+        season, year, _, oni = oni_rows[-1]
+
+        weekly = [ln.split() for ln in get_text(f"{CPC}/data/indices/wksst9120.for", ua).splitlines()
+                  if re.match(r"^\s*\d{2}[A-Z]{3}\d{4}", ln)]
+        last = weekly[-1]   # week, Niño1+2 SST, anomaly, Niño3 SST, anomaly, Niño3.4 SST, anomaly, Niño4 ...
+        enso = {
+            "issued": issued.group(1) if issued else None,
+            "status": status.group(1).strip() if status else None,
+            "synopsis": synopsis.group(1).strip() if synopsis else None,
+            "oni": {"season": season, "year": int(year), "anomaly": float(oni)},
+            "week": dt.datetime.strptime(last[0], "%d%b%Y").date().isoformat(),
+            "nino12": float(last[2]), "nino34": float(last[6]),
+        }
+        if not (enso["status"] and enso["synopsis"]):
+            raise ValueError("could not read the ENSO discussion")
+        cache.write_text(json.dumps(enso, indent=1), encoding="utf-8")
+        return enso
+    except Exception as exc:
+        print(f"NOAA ENSO data unavailable ({exc}); using the cached copy if there is one.")
+        return json.loads(cache.read_text(encoding="utf-8")) if cache.exists() else None
 
 
 def fetch_station(start, end):
@@ -463,15 +507,136 @@ def html_report(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, 
 </body></html>"""
 
 
-def site_fragment(report, run_utc, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start):
-    """Content for the GringoPost page: one Custom HTML block, without the page title (WordPress shows it)
-    and without the internal checks."""
-    body, _, _ = report_parts(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, normals, archive_start)
+SEASONS = {"DJF": "Dec–Feb", "JFM": "Jan–Mar", "FMA": "Feb–Apr", "MAM": "Mar–May", "AMJ": "Apr–Jun",
+           "MJJ": "May–Jul", "JJA": "Jun–Aug", "JAS": "Jul–Sep", "ASO": "Aug–Oct", "SON": "Sep–Nov",
+           "OND": "Oct–Dec", "NDJ": "Nov–Jan"}
+SCORES_AFTER_DAYS = 90   # publish forecast accuracy only once the archive covers about three months
+
+
+def outlook(rain):
+    """Words only: model rain amounts run high in Cuenca, so no millimetres reach readers."""
+    if rain < 1:
+        return "Mostly dry"
+    if rain < 10:
+        return "Showers possible"
+    return "Rain likely"
+
+
+def svg_temp_chart(rows):
+    """Daily highs and lows: forecast saved a day ahead (blue) vs measured at the airport (orange)."""
+    W, H, L, T, B = 720, 300, 44, 30, 64
+    ph, pw = H - T - B, W - L - 16
+    keys = ("fc_tmax", "stn_tmax", "fc_tmin", "stn_tmin")
+    vals = [r[k] for r in rows for k in keys if r.get(k) is not None]
+    if not vals:
+        return ""
+    lo, hi = int(min(vals)) - 2, int(max(vals)) + 3
+    y = lambda v: T + ph - (v - lo) / (hi - lo) * ph
+    gw = pw / len(rows)
+    x = lambda i: L + gw * i + gw / 2
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" font-family="system-ui, sans-serif" '
+           f'font-size="12" role="img" aria-label="Daily highs and lows: forecast compared with airport measurements">',
+           f'<rect width="{W}" height="{H}" fill="#fff"/>']
+    for v in range(lo, hi + 1, 2):
+        out.append(f'<line x1="{L}" x2="{W - 16}" y1="{y(v):.1f}" y2="{y(v):.1f}" stroke="{GRID}"/>'
+                   f'<text x="{L - 6}" y="{y(v) + 4:.1f}" text-anchor="end" fill="{MUTED}">{v}</text>')
+    out.append(f'<text x="8" y="{T - 12}" fill="{INK}">°C</text>')
+    for key, colour, dash in (("fc_tmax", C_FC, ""), ("stn_tmax", C_OBS, ""),
+                              ("fc_tmin", C_FC, ' stroke-dasharray="5 4"'),
+                              ("stn_tmin", C_OBS, ' stroke-dasharray="5 4"')):
+        pts = [(i, r[key]) for i, r in enumerate(rows) if r.get(key) is not None]
+        if len(pts) > 1:
+            out.append(f'<polyline fill="none" stroke="{colour}" stroke-width="2"{dash} points="'
+                       + " ".join(f"{x(i):.1f},{y(v):.1f}" for i, v in pts) + '"/>')
+        for i, v in pts:
+            out.append(f'<circle cx="{x(i):.1f}" cy="{y(v):.1f}" r="3.5" fill="{colour}"><title>{v:.0f} °C</title></circle>')
+    for i, r in enumerate(rows):
+        out.append(f'<text x="{x(i):.1f}" y="{H - B + 18}" text-anchor="middle" fill="{INK}">'
+                   f'{dt.date.fromisoformat(r["date"]).strftime("%a %d")}</text>')
+    legend(out, [("Forecast, saved a day ahead", C_FC), ("Measured at the airport", C_OBS)], L, H - 12)
+    out.append(f'<text x="{W - 16}" y="{H - 12}" text-anchor="end" fill="{MUTED}" font-size="11">'
+               f'solid: highs · dashed: lows</text>')
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def enso_html(enso):
+    if not enso:
+        return "<p>NOAA's El Niño status could not be loaded for this update.</p>"
+    oni = enso["oni"]
+    season = SEASONS.get(oni["season"], oni["season"])
+    issued = f", issued {enso['issued']}" if enso.get("issued") else ""
+    wk = dt.date.fromisoformat(enso["week"])
+    week = f"{wk:%B} {wk.day}"
+    return f"""<p><b>Official status: {enso['status']}.</b> {enso['synopsis']}
+<span class="note">(NOAA Climate Prediction Center{issued}.)</span></p>
+<ul>
+<li>Sea surface off the coast of Ecuador and Peru (Niño 1+2): <b>{enso['nino12']:+.1f} °C</b> compared with normal, week of {week}.</li>
+<li>Central Pacific (Niño 3.4), the main El Niño yardstick: <b>{enso['nino34']:+.1f} °C</b> that week. The three-month average for {season} {oni['year']} was {oni['anomaly']:+.1f} °C. El Niño conditions start at +0.5 °C.</li>
+</ul>
+<p class="note">What this means for Cuenca: El Niño mainly brings heavy rain to Ecuador's coast. In the Andes its effect is weaker and less predictable, so an unusually wet or dry month in Cuenca is not, by itself, proof that El Niño caused it.</p>"""
+
+
+def site_fragment(report, run_utc, met, rows, recent, normals, monthly_svg, archive_start, enso):
+    """Content for the GringoPost page: one Custom HTML block. Readers see temperatures, rain / no rain and
+    monthly rainfall against the normal; daily rain amounts and early accuracy scores stay internal.
+    data-report-date lets the page warn readers when it is showing an older report."""
+    ahead = [(d, met[d]) for d in sorted(met) if d > report.isoformat()][:3]
+
+    def tr(cells, head=False):
+        tag = "th" if head else "td"
+        return "<tr>" + "".join(f"<{tag}>{c}</{tag}>" for c in cells) + "</tr>"
+
+    def day(d):
+        return dt.date.fromisoformat(d).strftime("%a %b %d")
+
+    ahead_rows = "".join(tr([day(d), fmt(v["tmax"], " °C", 0), fmt(v["tmin"], " °C", 0), outlook(v["precip"])])
+                         for d, v in ahead)
+    back_rows = "".join(tr([
+        day(r["date"]),
+        f'{fmt(r["fc_tmax"], "°", 0)} / {fmt(r["stn_tmax"], "°", 0)}',
+        f'{fmt(r["fc_tmin"], "°", 0)} / {fmt(r["stn_tmin"], "°", 0)}',
+        "Rain" if r["stn_rain"] else ("Dry" if r["stn_rain"] is not None else "no data"),
+    ]) for r in rows)
+
+    start = dt.date.fromisoformat(archive_start) if archive_start else report
+    days_kept = (report - start).days
+    scores_from = (start + dt.timedelta(days=SCORES_AFTER_DAYS)).strftime("%B %Y")
     stamp = run_utc.astimezone(LOCAL).strftime("%B %d, %Y at %H:%M")
+    head = ["Day", "High °C: forecast / measured", "Low °C: forecast / measured", "Rain at the airport"]
+
     return f"""<!-- wp:html -->
-<div class="progninos">
+<div class="progninos" data-report-date="{report.isoformat()}">
 <style>{SITE_CSS}</style>
-{body}
+<p class="sub">Cuenca weather forecasts, checked against what happened. Report for <b>{report.strftime('%A, %B %d, %Y')}</b>.</p>
+
+<h2>Next 3 days</h2>
+<div class="wrap"><table>{tr(["Day", "High", "Low", "Outlook"], True)}{ahead_rows}</table></div>
+<p class="note">Forecast models tend to overstate how much rain falls in Cuenca, so we describe rain in words rather than millimetres.</p>
+
+<h2>Last 7 days: forecast vs what happened</h2>
+<div class="chart">{svg_temp_chart(rows)}</div>
+<div class="wrap"><table>{tr(head, True)}{back_rows}</table></div>
+<p class="note">Forecasts are the ones we saved a day in advance. Measurements come from Mariscal Lamar airport, reported about 06:00–22:00 in whole degrees. The airport reports whether it rained, not how much, and weather can differ across the city.</p>
+
+<h2>Rain compared with normal</h2>
+{month_html(recent, normals)}
+<div class="chart">{monthly_svg}</div>
+<p class="note">Source: CHIRPS, which combines satellite data with rain-gauge records. Its long-term average, about 890 mm a year, matches published figures for Cuenca. Each month is published 3–6 weeks after it ends.</p>
+
+<h2>El Niño right now</h2>
+{enso_html(enso)}
+
+<h2>Our forecast track record</h2>
+<p>We save every forecast and check it against what happened. The archive started on {start.strftime('%B %d, %Y')} and covers {days_kept} days so far. A few weeks are too short to judge a forecast fairly, so we will publish accuracy scores once we have about three months of records, around {scores_from}.</p>
+
+<h2>Sources</h2>
+<ul class="note">
+<li>Forecasts: MET Norway Locationforecast. Data from MET Norway (<a href="https://api.met.no/">api.met.no</a>), CC BY 4.0.</li>
+<li>Measurements: METAR reports from Mariscal Lamar airport (SECU) via the Iowa Environmental Mesonet.</li>
+<li>Monthly rainfall and normals: CHIRPS v2.0, UC Santa Barbara Climate Hazards Center.</li>
+<li>El Niño: NOAA Climate Prediction Center.</li>
+</ul>
 <p class="note">Updated automatically every morning. Last update: {stamp} (Cuenca time).</p>
 </div>
 <!-- /wp:html -->
@@ -538,8 +703,7 @@ def main():
         {"accuracy": acc, "checks": checks, "chirps_recent": recent}, indent=2), encoding="utf-8")
     (out / "report.html").write_text(html_report(report, met, rows, acc, checks, daily_svg, monthly_svg,
                                                  recent, normals, archive_start), encoding="utf-8")
-    site = site_fragment(report, now_utc, met, rows, acc, checks, daily_svg, monthly_svg,
-                         recent, normals, archive_start)
+    site = site_fragment(report, now_utc, met, rows, recent, normals, monthly_svg, archive_start, fetch_enso())
     (out / "site.html").write_text(site, encoding="utf-8")
     # output/latest/site.html is what the GringoPost page loads. It only moves forward when every check
     # passed, so a bad day leaves the previous report on the site.

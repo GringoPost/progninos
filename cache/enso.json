@@ -1,0 +1,13 @@
+{
+ "issued": "8 October 2026",
+ "status": "El Ni\u00f1o Advisory",
+ "synopsis": "El Ni\u00f1o continues to strengthen, with a strong-to-very strong El Ni\u00f1o likely through January-March 2027 (remaining greater than an 83% chance).",
+ "oni": {
+  "season": "ASO",
+  "year": 2026,
+  "anomaly": 2.46
+ },
+ "week": "2026-11-04",
+ "nino12": 5.6,
+ "nino34": 3.3
+}
