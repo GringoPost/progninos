@@ -20,7 +20,7 @@
     {
       "check": "forecast_available",
       "status": "pass",
-      "detail": "MET Norway forecast for 10 days"
+      "detail": "MET Norway forecast for 9 days"
     },
     {
       "check": "archive_complete",
@@ -44,9 +44,70 @@
     },
     {
       "check": "chirps_available",
-      "status": "fail",
-      "detail": "no CHIRPS data"
+      "status": "pass",
+      "detail": "CHIRPS latest month: Sep 2026"
     }
   ],
-  "chirps_recent": []
+  "chirps_recent": [
+    [
+      2025,
+      10,
+      76.8
+    ],
+    [
+      2025,
+      11,
+      58.1
+    ],
+    [
+      2025,
+      12,
+      47.1
+    ],
+    [
+      2026,
+      1,
+      103.5
+    ],
+    [
+      2026,
+      2,
+      109.8
+    ],
+    [
+      2026,
+      3,
+      104.6
+    ],
+    [
+      2026,
+      4,
+      139.6
+    ],
+    [
+      2026,
+      5,
+      47.8
+    ],
+    [
+      2026,
+      6,
+      66.1
+    ],
+    [
+      2026,
+      7,
+      25.3
+    ],
+    [
+      2026,
+      8,
+      31.4
+    ],
+    [
+      2026,
+      9,
+      54.7
+    ]
+  ]
 }
