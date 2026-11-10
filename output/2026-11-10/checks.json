@@ -20,7 +20,7 @@
     {
       "check": "forecast_available",
       "status": "pass",
-      "detail": "MET Norway forecast for 9 days"
+      "detail": "MET Norway forecast for 10 days"
     },
     {
       "check": "archive_complete",
