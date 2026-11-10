@@ -538,8 +538,18 @@ def main():
         {"accuracy": acc, "checks": checks, "chirps_recent": recent}, indent=2), encoding="utf-8")
     (out / "report.html").write_text(html_report(report, met, rows, acc, checks, daily_svg, monthly_svg,
                                                  recent, normals, archive_start), encoding="utf-8")
-    (out / "site.html").write_text(site_fragment(report, now_utc, met, rows, acc, checks, daily_svg, monthly_svg,
-                                                 recent, normals, archive_start), encoding="utf-8")
+    site = site_fragment(report, now_utc, met, rows, acc, checks, daily_svg, monthly_svg,
+                         recent, normals, archive_start)
+    (out / "site.html").write_text(site, encoding="utf-8")
+    # output/latest/site.html is what the GringoPost page loads. It only moves forward when every check
+    # passed, so a bad day leaves the previous report on the site.
+    if report == today and not any(c["status"] == "fail" for c in checks):
+        latest = HERE / "output" / "latest"
+        latest.mkdir(parents=True, exist_ok=True)
+        (latest / "site.html").write_text(site, encoding="utf-8")
+        print("Updated output/latest/site.html for the website.")
+    elif report == today:
+        print("Checks failed: output/latest/site.html left unchanged.")
 
     print(json.dumps(acc, indent=1))
     for c in checks:
