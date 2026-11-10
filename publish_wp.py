@@ -55,6 +55,20 @@ def main():
     token = base64.b64encode(f"{cfg['WP_USER']}:{cfg['WP_APP_PASSWORD'].replace(' ', '')}".encode()).decode()
     headers = {"Authorization": f"Basic {token}", "User-Agent": UA, "Content-Type": "application/json"}
 
+    # Check the login first, so a failure says whether WordPress recognised the user at all.
+    me = urllib.request.Request(f"{site}/wp-json/wp/v2/users/me?context=edit&_fields=id,username,roles",
+                                headers=headers)
+    try:
+        with urllib.request.urlopen(me, timeout=60) as r:
+            who = json.loads(r.read())
+        print(f"Logged in to WordPress as {who.get('username')} (roles: {', '.join(who.get('roles', []))}).")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "replace")[:300]
+        print(f"WordPress did not accept the login: HTTP {exc.code}. {detail}")
+        print("rest_not_logged_in = the site ignored the login; incorrect_password / invalid_username = "
+              "check WP_APP_PASSWORD / WP_USER.")
+        return 1
+
     body = json.dumps({"content": site_html.read_text(encoding="utf-8")}).encode()
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")
     try:
