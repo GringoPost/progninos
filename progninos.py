@@ -1,16 +1,18 @@
-"""Progniños: Cuenca forecasts, checked against what happened. Free data sources only.
+"""Progniños: local forecasts, checked against what happened. Free data sources only.
 
 Standard library only (Python 3.9+). Usage:
-    python progninos.py                     # report for today (look-back ends yesterday)
+    python progninos.py                     # all cities, today (look-back ends yesterday)
+    python progninos.py --city quito        # one city
     python progninos.py --date 2026-11-10   # rerun for an earlier date
 
 Sources, all free and open to commercial use with attribution:
     Forecast      MET Norway Locationforecast (CC BY 4.0)
     Past forecast our own archive of MET Norway forecasts (archive/forecast_log.csv)
-    Observations  Mariscal Lamar airport METAR via Iowa Environmental Mesonet
+    Observations  airport METAR via Iowa Environmental Mesonet
     Rainfall      CHIRPS v2.0 monthly (satellite + rain gauges) via the IRI Data Library
 
-Outputs go to ./output/<date>/ : report.html, precip_chart.svg, monthly_chart.svg, lookback.csv, checks.json
+Outputs go to ./output/<city>/<date>/ (report.html, site.html, charts, lookback.csv, checks.json);
+the page on GringoPost reads ./output/latest/<city>.html
 """
 import argparse
 import calendar
@@ -25,18 +27,63 @@ import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
-# ---- Fixed location (Cuenca, Parque Calderón area) --------------------------
-LAT, LON, TZ = -2.9001, -79.0059, "America/Guayaquil"   # MET Norway accepts at most 4 decimals
-ALTITUDE = 2560
-STATION = "SECU"            # Mariscal Lamar airport, ~2 km NE of the point above
+# ---- Locations ---------------------------------------------------------------
+# Adding a city = one entry here. Slugs match GringoPost's location names.
+# MET Norway accepts at most 4 decimals. Stations are airport METAR codes (Iowa Environmental Mesonet).
+ANDES_ENSO = ("El Niño mainly brings heavy rain to Ecuador's coast. In the Andes its effect is weaker and less "
+              "predictable, so an unusually wet or dry month in {name} is not, by itself, proof that El Niño caused it.")
+LOCATIONS = {
+    "cuenca": dict(
+        name="Cuenca", country="Ecuador", lat=-2.9001, lon=-79.0059, altitude=2560,
+        tz="America/Guayaquil", utc_offset=-5, station="SECU", station_name="Mariscal Lamar airport",
+        station_note="Measurements come from Mariscal Lamar airport, about 2 km from the city centre, "
+                     "reported about 06:00–22:00.",
+        rain_check="It matches published figures for Cuenca (about 800–900 mm).",
+        temp_range=(-2, 32), max_daily_rain=80, enso_note=ANDES_ENSO, show_nino12=True),
+    "quito": dict(
+        name="Quito", country="Ecuador", lat=-0.2200, lon=-78.5125, altitude=2850,
+        tz="America/Guayaquil", utc_offset=-5, station="SEQM", station_name="Mariscal Sucre airport",
+        station_note="Measurements come from Mariscal Sucre airport in Tababela, about 18 km east of central "
+                     "Quito and roughly 450 m lower, so it usually reads warmer than the city.",
+        rain_check="", temp_range=(-2, 32), max_daily_rain=100, enso_note=ANDES_ENSO, show_nino12=True),
+    "ajijic": dict(
+        name="Ajijic", country="Mexico", lat=20.2990, lon=-103.2610, altitude=1530,
+        tz="America/Mexico_City", utc_offset=-6, station="MMGL", station_name="Guadalajara airport",
+        station_note="Measurements come from Guadalajara airport, about 25 km north of Ajijic at a similar "
+                     "altitude. The lakeshore is often milder, with cooler afternoons and warmer nights.",
+        rain_check="", temp_range=(-4, 40), max_daily_rain=150, show_nino12=False,
+        enso_note="In central Mexico, El Niño years often bring a weaker summer rainy season and more winter "
+                  "rain than usual, but the pattern varies from one event to another. An unusually wet or dry "
+                  "month around Lake Chapala is not, by itself, proof that El Niño caused it."),
+    "danang": dict(
+        name="Da Nang", country="Vietnam", lat=16.0544, lon=108.2022, altitude=5,
+        tz="Asia/Ho_Chi_Minh", utc_offset=7, station="VVDN", station_name="Da Nang airport",
+        station_note="Measurements come from Da Nang airport, in the city.",
+        rain_check="", temp_range=(5, 42), max_daily_rain=400, show_nino12=False,
+        enso_note="In Vietnam, El Niño years tend to be hotter and drier than usual, often with fewer typhoons "
+                  "and a higher risk of drought, but the pattern varies from one event to another. An unusually "
+                  "wet or dry month in Da Nang is not, by itself, proof that El Niño caused it."),
+}
 NORMAL_YEARS = (1991, 2020)    # WMO standard reference period
 RAIN_DAY_MM = 1.0              # threshold for calling a day "rainy"
-LOCAL = dt.timezone(dt.timedelta(hours=-5))   # Ecuador has no daylight saving time
 
 HERE = Path(__file__).resolve().parent
 CACHE = HERE / "cache"
 ARCHIVE = HERE / "archive"
-LOG = ARCHIVE / "forecast_log.csv"
+
+
+def use_location(slug):
+    """Point the module-level settings at one city. Every fetch and output below reads these."""
+    global SLUG, PLACE, LAT, LON, ALTITUDE, TZ, LOCAL, STATION, CHIRPS_CACHE, LOG, OUT
+    SLUG, PLACE = slug, LOCATIONS[slug]
+    LAT, LON, ALTITUDE, TZ, STATION = (PLACE[k] for k in ("lat", "lon", "altitude", "tz", "station"))
+    LOCAL = dt.timezone(dt.timedelta(hours=PLACE["utc_offset"]))   # none of these places uses daylight saving
+    CHIRPS_CACHE = CACHE / slug
+    LOG = ARCHIVE / slug / "forecast_log.csv"
+    OUT = HERE / "output" / slug
+
+
+use_location("cuenca")
 
 MET_UA = "progninos/1.0 https://gringopost.com"  # MET Norway requires an identifying User-Agent
 CHIRPS = "https://iridl.ldeo.columbia.edu/SOURCES/.UCSB/.CHIRPS/.v2p0/.monthly/.global/.precipitation"
@@ -85,13 +132,19 @@ def fetch_chirps_year(year, last_month=12):
 
     The IRI Data Library returns plain values in time order; long ranges time out, so ask per year.
     """
-    CACHE.mkdir(exist_ok=True)
-    f = CACHE / f"chirps_{year}.json"
+    CHIRPS_CACHE.mkdir(parents=True, exist_ok=True)
+    f = CHIRPS_CACHE / f"chirps_{year}.json"
     if f.exists():
         return json.loads(f.read_text())
     url = (f"{CHIRPS}/X/{LON}/VALUE/Y/{LAT}/VALUE/T/"
            f"(Jan%20{year})/({MONTHS[last_month - 1]}%20{year})/RANGE/data.tsv")
     vals = [float(x) for x in get_text(url).split()]
+    if len(vals) != last_month and last_month == 12:
+        # The server sometimes returns nothing for a whole year but answers for half a year at a time.
+        vals = []
+        for a, b in (("Jan", "Jun"), ("Jul", "Dec")):
+            vals += [float(x) for x in get_text(
+                f"{CHIRPS}/X/{LON}/VALUE/Y/{LAT}/VALUE/T/({a}%20{year})/({b}%20{year})/RANGE/data.tsv").split()]
     if len(vals) == 12:
         f.write_text(json.dumps(vals))
     return vals
@@ -108,6 +161,10 @@ def chirps_normals():
         out[m] = {"mean": round(statistics.mean(vs), 1), "p25": round(q[0], 1), "p75": round(q[2], 1),
                   "years": len(vs), "all": sorted(vs)}
     return out
+
+
+def annual_normal(normals):
+    return sum(normals[m]["mean"] for m in range(1, 13))
 
 
 def chirps_recent(report, n=12):
@@ -149,6 +206,7 @@ def fetch_enso():
     Falls back to the last good copy in cache/enso.json if NOAA is unreachable."""
     import html as htmlmod
     import re
+    CACHE.mkdir(exist_ok=True)
     cache = CACHE / "enso.json"
     ua = {"User-Agent": MET_UA}
     try:
@@ -211,7 +269,7 @@ def fetch_station(start, end):
 # ---- Forecast archive -------------------------------------------------------
 def archive_forecast(met, run_time, today):
     """Our own permanent forecast record, appended on every run."""
-    ARCHIVE.mkdir(exist_ok=True)
+    LOG.parent.mkdir(parents=True, exist_ok=True)
     new = not LOG.exists()
     with LOG.open("a", newline="") as fh:
         w = csv.writer(fh)
@@ -268,18 +326,19 @@ def quality_checks(rows, met, recent, archive_start):
         checks.append({"check": name, "status": "pass" if ok else "fail", "detail": detail})
 
     add("forecast_available", len(met) >= 3, f"MET Norway forecast for {len(met)} days")
-    # Days before the archive started cannot have a saved forecast; only later gaps are a problem.
+    # Every look-back day needs a forecast saved a day earlier, so a new city waits until its archive covers
+    # a full week before anything reaches readers.
     missing = [r["date"] for r in rows if r["fc_precip"] is None]
-    gaps = [d for d in missing if archive_start and d > archive_start]
-    add("archive_complete", not gaps,
-        f"missing saved forecasts: {gaps or 'none'}"
-        + (f"; {len(missing) - len(gaps)} day(s) before the archive started on {archive_start}" if len(missing) > len(gaps) else ""))
-    odd = [r["date"] for r in rows if r["fc_precip"] is not None and not (0 <= r["fc_precip"] <= 80)]
-    odd += [d for d, v in met.items() if not (0 <= v["precip"] <= 80)]
-    add("precip_plausible", not odd, "daily rain between 0 and 80 mm" + (f"; outside: {odd}" if odd else ""))
-    odd = [d for d, v in met.items() if not (-2 <= v["tmin"] <= v["tmax"] <= 32)]
-    odd += [r["date"] for r in rows for k in ("stn_tmax", "stn_tmin") if r[k] is not None and not (-2 <= r[k] <= 32)]
-    add("temp_plausible", not odd, "temperatures between -2 and 32 °C" + (f"; outside: {odd}" if odd else ""))
+    add("archive_complete", not missing,
+        f"missing saved forecasts: {missing or 'none'} (archive started {archive_start or 'not yet'})")
+    top = PLACE["max_daily_rain"]
+    lo, hi = PLACE["temp_range"]
+    odd = [r["date"] for r in rows if r["fc_precip"] is not None and not (0 <= r["fc_precip"] <= top)]
+    odd += [d for d, v in met.items() if not (0 <= v["precip"] <= top)]
+    add("precip_plausible", not odd, f"daily rain between 0 and {top} mm" + (f"; outside: {odd}" if odd else ""))
+    odd = [d for d, v in met.items() if not (lo <= v["tmin"] <= v["tmax"] <= hi)]
+    odd += [r["date"] for r in rows for k in ("stn_tmax", "stn_tmin") if r[k] is not None and not (lo <= r[k] <= hi)]
+    add("temp_plausible", not odd, f"temperatures between {lo} and {hi} °C" + (f"; outside: {odd}" if odd else ""))
     stn_days = sum(1 for r in rows if r.get("stn_tmax") is not None)
     add("station_available", stn_days >= 5, f"airport METAR data on {stn_days}/{len(rows)} days")
     add("chirps_available", bool(recent),
@@ -346,7 +405,7 @@ def svg_monthly_chart(recent, normals):
     ph = H - T - B
     top = max([v for _, _, v in recent] + [normals[m]["p75"] for _, m, _ in recent] + [50])
     top = (int(top / 50) + 1) * 50
-    out, y = svg_frame(W, H, L, T, ph, top, 50, "Monthly rain in Cuenca compared with the 1991-2020 normal")
+    out, y = svg_frame(W, H, L, T, ph, top, 50, f"Monthly rain in {PLACE['name']} compared with the 1991-2020 normal")
     gw = (W - L - 16) / len(recent)
     for i, (yr, m, v) in enumerate(recent):
         nm = normals[m]
@@ -393,7 +452,7 @@ def month_html(recent, normals):
     y, m, total = recent[-1]
     nm = normals[m]
     below = sum(1 for v in nm["all"] if v < total)
-    return (f"<p>Rain in Cuenca in <b>{MONTHS[m - 1]} {y}</b>: <b>{total:.0f} mm</b>. The 1991–2020 average for "
+    return (f"<p>Rain in {PLACE['name']} in <b>{MONTHS[m - 1]} {y}</b>: <b>{total:.0f} mm</b>. The 1991–2020 average for "
             f"{MONTHS[m - 1]} is <b>{nm['mean']:.0f} mm</b> ({round(100 * total / nm['mean'])}% of normal); the middle half "
             f"of years fell between {nm['p25']:.0f} and {nm['p75']:.0f} mm. That makes it "
             f"<b>{compare_phrase(total, nm)}</b>, wetter than {below} of {nm['years']} reference years.</p>")
@@ -434,24 +493,24 @@ def report_parts(report, met, rows, acc, checks, daily_svg, monthly_svg, recent,
             if failed else '')
     checks_html = f"""<h2>Automatic quality checks (internal)</h2>
 <div class="wrap"><table>{tr(["Check", "Status", "Detail"], True)}{check_rows}</table></div>"""
-    body = f"""<p class="sub">Cuenca weather forecasts, checked against what happened. Report for {report.strftime('%A, %B %d, %Y')}.</p>
+    body = f"""<p class="sub">{PLACE['name']} weather forecasts, checked against what happened. Report for {report.strftime('%A, %B %d, %Y')}.</p>
 
 <h2>A. Looking ahead – next 3 days</h2>
 <div class="wrap"><table>{tr(["Day", "High", "Low", "Forecast rain", "Summary"], True)}{ahead_rows}</table></div>
-<p class="note">Forecast models tend to overstate rain amounts in Cuenca, so treat the millimetres as a rough guide.</p>
+<p class="note">Forecast rain amounts are uncertain (in Cuenca they run about twice too high), so treat the millimetres as a rough guide.</p>
 
 <h2>B. Looking back – last {len(rows)} days</h2>
 <div class="chart">{daily_svg}</div>
 <div class="wrap"><table>{tr(["Day", "Forecast rain (1 day ahead)", "Normal for the day*", "Airport reported rain?", "High °C: forecast / airport", "Low °C: forecast / airport"], True)}{back_rows}</table></div>
-<p class="note">Forecasts are the ones we saved a day in advance. Airport = real observations from Mariscal Lamar airport (METAR),
-reported about 06:00–22:00 only, in whole degrees; they say whether it rained, not how much.
+<p class="note">Forecasts are the ones we saved a day in advance. {PLACE['station_note']} Airport reports are in whole degrees
+and say whether it rained, not how much.
 * The month's 1991–2020 CHIRPS average spread evenly across its days.</p>
 
 <h2>C. Compared with normal</h2>
 {month_html(recent, normals)}
 <div class="chart">{monthly_svg}</div>
 <p class="note">Source: CHIRPS, which combines satellite data with rain-gauge records (about 5 km). Its long-term average,
-about 890 mm a year, matches published figures for Cuenca. It is published 3–6 weeks after each month ends.</p>
+about {annual_normal(normals):.0f} mm a year here. {PLACE['rain_check']} It is published 3–6 weeks after each month ends.</p>
 
 <h2>D. Forecast accuracy</h2>
 {acc_html}
@@ -461,9 +520,9 @@ about 890 mm a year, matches published figures for Cuenca. It is published 3–6
 <ul>
 <li>Forecasts: MET Norway Locationforecast. Data from MET Norway (<a href="https://api.met.no/">api.met.no</a>), CC BY 4.0.</li>
 <li>Past forecasts: our own daily archive of those forecasts, kept since {archive_start}.</li>
-<li>Airport observations: METAR reports from Mariscal Lamar (SECU) via the Iowa Environmental Mesonet.</li>
+<li>Airport observations: METAR reports from {PLACE['station_name']} ({STATION}) via the Iowa Environmental Mesonet.</li>
 <li>Monthly rainfall and normals: CHIRPS v2.0, UC Santa Barbara Climate Hazards Center, via the IRI Data Library.</li>
-<li>Location: {LAT}, {LON} (central Cuenca), time zone {TZ}. Weather can differ a lot across the city.</li>
+<li>Location: {LAT}, {LON} ({PLACE['name']}), time zone {TZ}. Weather can differ a lot across a city.</li>
 </ul>"""
     return body, flag, checks_html
 
@@ -498,7 +557,7 @@ def html_report(report, met, rows, acc, checks, daily_svg, monthly_svg, recent, 
                                            recent, normals, archive_start)
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Progniños – Cuenca – {report}</title>
+<title>Progniños – {PLACE['name']} – {report}</title>
 <style>{REPORT_CSS}</style></head><body>
 <h1>Progniños</h1>
 {flag}
@@ -514,7 +573,8 @@ SCORES_AFTER_DAYS = 90   # publish forecast accuracy only once the archive cover
 
 
 def outlook(rain):
-    """Words only: model rain amounts run high in Cuenca, so no millimetres reach readers."""
+    """Words only: forecast rain amounts are uncertain (about twice too high in Cuenca), so no millimetres
+    reach readers."""
     if rain < 1:
         return "Mostly dry"
     if rain < 10:
@@ -568,13 +628,15 @@ def enso_html(enso):
     issued = f", issued {enso['issued']}" if enso.get("issued") else ""
     wk = dt.date.fromisoformat(enso["week"])
     week = f"{wk:%B} {wk.day}"
+    coast = (f"<li>Sea surface off the coast of Ecuador and Peru (Niño 1+2): <b>{enso['nino12']:+.1f} °C</b> "
+             f"compared with normal, week of {week}.</li>\n") if PLACE["show_nino12"] else ""
     return f"""<p><b>Official status: {enso['status']}.</b> {enso['synopsis']}
 <span class="note">(NOAA Climate Prediction Center{issued}.)</span></p>
 <ul>
-<li>Sea surface off the coast of Ecuador and Peru (Niño 1+2): <b>{enso['nino12']:+.1f} °C</b> compared with normal, week of {week}.</li>
-<li>Central Pacific (Niño 3.4), the main El Niño yardstick: <b>{enso['nino34']:+.1f} °C</b> that week. The three-month average for {season} {oni['year']} was {oni['anomaly']:+.1f} °C. El Niño conditions start at +0.5 °C.</li>
+{coast}<li>Central Pacific (Niño 3.4), the main El Niño yardstick: <b>{enso['nino34']:+.1f} °C</b> compared with normal, week of {week}. The three-month average for {season} {oni['year']} was {oni['anomaly']:+.1f} °C. El Niño conditions start at +0.5 °C.</li>
 </ul>
-<p class="note">What this means for Cuenca: El Niño mainly brings heavy rain to Ecuador's coast. In the Andes its effect is weaker and less predictable, so an unusually wet or dry month in Cuenca is not, by itself, proof that El Niño caused it.</p>"""
+<p class="note">What this means for {PLACE['name']}: {PLACE['enso_note'].format(name=PLACE['name'])}</p>
+<p class="note">Back home in the US and Canada: El Niño winters usually bring more rain and cooler weather across the southern US, from California to Florida, and milder, drier weather to the northern US and western Canada. El Niño years also tend to have fewer Atlantic hurricanes. These are typical patterns, not guarantees; see <a href="https://www.cpc.ncep.noaa.gov/products/predictions/long_range/seasonal.php?lead=1">NOAA's seasonal outlook</a> for the current forecast.</p>"""
 
 
 def site_fragment(report, run_utc, met, rows, recent, normals, monthly_svg, archive_start, enso):
@@ -606,23 +668,23 @@ def site_fragment(report, run_utc, met, rows, recent, normals, monthly_svg, arch
     head = ["Day", "High °C: forecast / measured", "Low °C: forecast / measured", "Rain at the airport"]
 
     return f"""<!-- wp:html -->
-<div class="progninos" data-report-date="{report.isoformat()}">
+<div class="progninos" data-city="{SLUG}" data-report-date="{report.isoformat()}" data-generated="{run_utc.strftime('%Y-%m-%dT%H:%M:%SZ')}">
 <style>{SITE_CSS}</style>
-<p class="sub">Cuenca weather forecasts, checked against what happened. Report for <b>{report.strftime('%A, %B %d, %Y')}</b>.</p>
+<p class="sub">{PLACE['name']} weather forecasts, checked against what happened. Report for <b>{report.strftime('%A, %B %d, %Y')}</b>.</p>
 
 <h2>Next 3 days</h2>
 <div class="wrap"><table>{tr(["Day", "High", "Low", "Outlook"], True)}{ahead_rows}</table></div>
-<p class="note">Forecast models tend to overstate how much rain falls in Cuenca, so we describe rain in words rather than millimetres.</p>
+<p class="note">Forecast rain amounts are uncertain (in Cuenca, for example, models show about twice the rain that actually falls), so we describe rain in words rather than millimetres.</p>
 
 <h2>Last 7 days: forecast vs what happened</h2>
 <div class="chart">{svg_temp_chart(rows)}</div>
 <div class="wrap"><table>{tr(head, True)}{back_rows}</table></div>
-<p class="note">Forecasts are the ones we saved a day in advance. Measurements come from Mariscal Lamar airport, reported about 06:00–22:00 in whole degrees. The airport reports whether it rained, not how much, and weather can differ across the city.</p>
+<p class="note">Forecasts are the ones we saved a day in advance. {PLACE['station_note']} Airport reports are in whole degrees and say whether it rained, not how much. Weather can differ across the area.</p>
 
 <h2>Rain compared with normal</h2>
 {month_html(recent, normals)}
 <div class="chart">{monthly_svg}</div>
-<p class="note">Source: CHIRPS, which combines satellite data with rain-gauge records. Its long-term average, about 890 mm a year, matches published figures for Cuenca. Each month is published 3–6 weeks after it ends.</p>
+<p class="note">Source: CHIRPS, which combines satellite data with rain-gauge records. Its 1991–2020 average here is about {annual_normal(normals):.0f} mm a year. {PLACE['rain_check']} Each month is published 3–6 weeks after it ends.</p>
 
 <h2>El Niño right now</h2>
 {enso_html(enso)}
@@ -633,30 +695,24 @@ def site_fragment(report, run_utc, met, rows, recent, normals, monthly_svg, arch
 <h2>Sources</h2>
 <ul class="note">
 <li>Forecasts: MET Norway Locationforecast. Data from MET Norway (<a href="https://api.met.no/">api.met.no</a>), CC BY 4.0.</li>
-<li>Measurements: METAR reports from Mariscal Lamar airport (SECU) via the Iowa Environmental Mesonet.</li>
+<li>Measurements: METAR reports from {PLACE['station_name']} ({STATION}) via the Iowa Environmental Mesonet.</li>
 <li>Monthly rainfall and normals: CHIRPS v2.0, UC Santa Barbara Climate Hazards Center.</li>
 <li>El Niño: NOAA Climate Prediction Center.</li>
 </ul>
-<p class="note">Updated automatically every morning. Last update: {stamp} (Cuenca time).</p>
+<p class="note">Updated automatically every morning. Last update: {stamp} ({PLACE['name']} time).</p>
 </div>
 <!-- /wp:html -->
 """
 
 
 # ---- Main -------------------------------------------------------------------
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--date", help="report date YYYY-MM-DD (default: today in Cuenca)")
-    ap.add_argument("--days", type=int, default=7, help="look-back length")
-    a = ap.parse_args()
-
-    now_utc = dt.datetime.now(dt.timezone.utc)
+def run_city(report_date, days_back, now_utc, enso):
     today = now_utc.astimezone(LOCAL).date()
-    report = dt.date.fromisoformat(a.date) if a.date else today
+    report = report_date or today
     end = report - dt.timedelta(days=1)
-    start = end - dt.timedelta(days=a.days - 1)
-    days = [(start + dt.timedelta(days=i)).isoformat() for i in range(a.days)]
-    print(f"Report {report} | look-back {days[0]} .. {days[-1]}")
+    start = end - dt.timedelta(days=days_back - 1)
+    days = [(start + dt.timedelta(days=i)).isoformat() for i in range(days_back)]
+    print(f"== {PLACE['name']}: report {report} | look-back {days[0]} .. {days[-1]}")
 
     try:
         met = fetch_met_norway()
@@ -688,7 +744,7 @@ def main():
     acc = accuracy(rows)
     checks = quality_checks(rows, met, recent, archive_start)
 
-    out = HERE / "output" / report.isoformat()
+    out = OUT / report.isoformat()
     out.mkdir(parents=True, exist_ok=True)
     daily_svg = svg_daily_chart(rows)
     monthly_svg = svg_monthly_chart(recent, normals) if recent else ""
@@ -703,22 +759,46 @@ def main():
         {"accuracy": acc, "checks": checks, "chirps_recent": recent}, indent=2), encoding="utf-8")
     (out / "report.html").write_text(html_report(report, met, rows, acc, checks, daily_svg, monthly_svg,
                                                  recent, normals, archive_start), encoding="utf-8")
-    site = site_fragment(report, now_utc, met, rows, recent, normals, monthly_svg, archive_start, fetch_enso())
+    site = site_fragment(report, now_utc, met, rows, recent, normals, monthly_svg, archive_start, enso)
     (out / "site.html").write_text(site, encoding="utf-8")
-    # output/latest/site.html is what the GringoPost page loads. It only moves forward when every check
+    # output/latest/<city>.html is what the GringoPost page loads. It only moves forward when every check
     # passed, so a bad day leaves the previous report on the site.
     if report == today and not any(c["status"] == "fail" for c in checks):
         latest = HERE / "output" / "latest"
         latest.mkdir(parents=True, exist_ok=True)
-        (latest / "site.html").write_text(site, encoding="utf-8")
-        print("Updated output/latest/site.html for the website.")
+        (latest / f"{SLUG}.html").write_text(site, encoding="utf-8")
+        if SLUG == "cuenca":   # the first staging page still reads the old file name
+            (latest / "site.html").write_text(site, encoding="utf-8")
+        print(f"Updated output/latest/{SLUG}.html for the website.")
     elif report == today:
-        print("Checks failed: output/latest/site.html left unchanged.")
+        print(f"Checks failed: output/latest/{SLUG}.html left unchanged.")
 
-    print(json.dumps(acc, indent=1))
     for c in checks:
         print(f"[{c['status']}] {c['check']}: {c['detail']}")
     print(f"Written to {out}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--city", action="append", choices=sorted(LOCATIONS),
+                    help="city to run (repeatable; default: all)")
+    ap.add_argument("--date", help="report date YYYY-MM-DD (default: today in each city)")
+    ap.add_argument("--days", type=int, default=7, help="look-back length")
+    a = ap.parse_args()
+
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    report_date = dt.date.fromisoformat(a.date) if a.date else None
+    enso = fetch_enso()
+    failed = []
+    for slug in a.city or list(LOCATIONS):
+        use_location(slug)
+        try:
+            run_city(report_date, a.days, now_utc, enso)
+        except Exception as exc:   # one city failing must not stop the others
+            print(f"!! {slug} failed: {exc!r}")
+            failed.append(slug)
+    if failed:
+        raise SystemExit(f"Failed: {', '.join(failed)}")
 
 
 if __name__ == "__main__":
