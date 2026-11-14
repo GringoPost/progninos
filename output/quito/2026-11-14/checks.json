@@ -1,0 +1,113 @@
+{
+  "accuracy": {
+    "tmax_vs_station": {
+      "n": 0,
+      "mae": null,
+      "bias": null
+    },
+    "tmin_vs_station": {
+      "n": 0,
+      "mae": null,
+      "bias": null
+    },
+    "rain_yes_no_vs_station": {
+      "n": 0,
+      "correct": 0
+    },
+    "forecast_rain_total": 0
+  },
+  "checks": [
+    {
+      "check": "forecast_available",
+      "status": "pass",
+      "detail": "MET Norway forecast for 9 days"
+    },
+    {
+      "check": "archive_complete",
+      "status": "fail",
+      "detail": "missing saved forecasts: ['2026-11-07', '2026-11-08', '2026-11-09', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13'] (archive started 2026-11-14)"
+    },
+    {
+      "check": "precip_plausible",
+      "status": "pass",
+      "detail": "daily rain between 0 and 100 mm"
+    },
+    {
+      "check": "temp_plausible",
+      "status": "pass",
+      "detail": "temperatures between -2 and 32 \u00b0C"
+    },
+    {
+      "check": "station_available",
+      "status": "pass",
+      "detail": "airport METAR data on 7/7 days"
+    },
+    {
+      "check": "chirps_available",
+      "status": "pass",
+      "detail": "CHIRPS latest month: Sep 2026"
+    }
+  ],
+  "chirps_recent": [
+    [
+      2025,
+      10,
+      148.0
+    ],
+    [
+      2025,
+      11,
+      113.7
+    ],
+    [
+      2025,
+      12,
+      48.7
+    ],
+    [
+      2026,
+      1,
+      157.3
+    ],
+    [
+      2026,
+      2,
+      158.9
+    ],
+    [
+      2026,
+      3,
+      173.3
+    ],
+    [
+      2026,
+      4,
+      163.4
+    ],
+    [
+      2026,
+      5,
+      106.1
+    ],
+    [
+      2026,
+      6,
+      34.0
+    ],
+    [
+      2026,
+      7,
+      14.1
+    ],
+    [
+      2026,
+      8,
+      17.3
+    ],
+    [
+      2026,
+      9,
+      58.1
+    ]
+  ]
+}

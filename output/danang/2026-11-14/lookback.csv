@@ -1,0 +1,8 @@
+date,fc_precip,normal_precip,fc_tmax,stn_tmax,fc_tmin,stn_tmin,stn_rain,stn_codes
+2026-11-07,,11.9,,31.0,,25.0,True,+TSRA -RA
+2026-11-08,,11.9,,31.0,,24.0,True,-RA -SHRA
+2026-11-09,,11.9,,30.0,,24.0,True,+SHRA -RA -RA VCTS -SHRA SHRA
+2026-11-10,,11.9,,27.0,,23.0,True,+SHRA -RA -RA BR -RA VCTS -SHRA RA BR SHRA
+2026-11-11,,11.9,,26.0,,23.0,True,-RA -RA BR RA BR
+2026-11-12,,11.9,,26.0,,22.0,True,+SHRA -RA -RA BR SHRA
+2026-11-13,,11.9,,29.0,,23.0,True,-RA -RA BR

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" font-family="system-ui, sans-serif" font-size="12" role="img" aria-label="Monthly rain in Quito compared with the 1991-2020 normal">
+<rect width="720" height="300" fill="#fff"/>
+<line x1="48" x2="704" y1="246.0" y2="246.0" stroke="#e5e5e5"/><text x="42" y="250.0" text-anchor="end" fill="#555">0</text>
+<line x1="48" x2="704" y1="204.0" y2="204.0" stroke="#e5e5e5"/><text x="42" y="208.0" text-anchor="end" fill="#555">50</text>
+<line x1="48" x2="704" y1="162.0" y2="162.0" stroke="#e5e5e5"/><text x="42" y="166.0" text-anchor="end" fill="#555">100</text>
+<line x1="48" x2="704" y1="120.0" y2="120.0" stroke="#e5e5e5"/><text x="42" y="124.0" text-anchor="end" fill="#555">150</text>
+<line x1="48" x2="704" y1="78.0" y2="78.0" stroke="#e5e5e5"/><text x="42" y="82.0" text-anchor="end" fill="#555">200</text>
+<line x1="48" x2="704" y1="36.0" y2="36.0" stroke="#e5e5e5"/><text x="42" y="40.0" text-anchor="end" fill="#555">250</text>
+<text x="8" y="24" fill="#222">mm</text>
+<rect x="51.0" y="135.2" width="48.7" height="35.4" fill="#e5e5e5"/>
+<rect x="57.8" y="121.7" width="35.0" height="124.3" fill="#e08a2c"><title>Oct 2025: 148 mm (normal 111)</title></rect>
+<line x1="51.0" x2="99.7" y1="152.9" y2="152.9" stroke="#222" stroke-width="2"/>
+<text x="75.3" y="262" text-anchor="middle" fill="#222">Oct</text>
+<text x="75.3" y="276" text-anchor="middle" fill="#555" font-size="10">2025</text>
+<rect x="105.7" y="137.6" width="48.7" height="44.7" fill="#e5e5e5"/>
+<rect x="112.5" y="150.5" width="35.0" height="95.5" fill="#e08a2c"><title>Nov 2025: 114 mm (normal 104)</title></rect>
+<line x1="105.7" x2="154.3" y1="158.2" y2="158.2" stroke="#222" stroke-width="2"/>
+<text x="130.0" y="262" text-anchor="middle" fill="#222">Nov</text>
+<rect x="160.3" y="145.4" width="48.7" height="32.7" fill="#e5e5e5"/>
+<rect x="167.2" y="205.1" width="35.0" height="40.9" fill="#e08a2c"><title>Dec 2025: 49 mm (normal 96)</title></rect>
+<line x1="160.3" x2="209.0" y1="165.2" y2="165.2" stroke="#222" stroke-width="2"/>
+<text x="184.7" y="262" text-anchor="middle" fill="#222">Dec</text>
+<rect x="215.0" y="133.5" width="48.7" height="58.5" fill="#e5e5e5"/>
+<rect x="221.8" y="113.9" width="35.0" height="132.1" fill="#e08a2c"><title>Jan 2026: 157 mm (normal 102)</title></rect>
+<line x1="215.0" x2="263.7" y1="160.5" y2="160.5" stroke="#222" stroke-width="2"/>
+<text x="239.3" y="262" text-anchor="middle" fill="#222">Jan</text>
+<text x="239.3" y="276" text-anchor="middle" fill="#555" font-size="10">2026</text>
+<rect x="269.7" y="143.7" width="48.7" height="31.8" fill="#e5e5e5"/>
+<rect x="276.5" y="112.5" width="35.0" height="133.5" fill="#e08a2c"><title>Feb 2026: 159 mm (normal 113)</title></rect>
+<line x1="269.7" x2="318.3" y1="151.2" y2="151.2" stroke="#222" stroke-width="2"/>
+<text x="294.0" y="262" text-anchor="middle" fill="#222">Feb</text>
+<rect x="324.3" y="71.4" width="48.7" height="47.5" fill="#e5e5e5"/>
+<rect x="331.2" y="100.4" width="35.0" height="145.6" fill="#e08a2c"><title>Mar 2026: 173 mm (normal 179)</title></rect>
+<line x1="324.3" x2="373.0" y1="95.7" y2="95.7" stroke="#222" stroke-width="2"/>
+<text x="348.7" y="262" text-anchor="middle" fill="#222">Mar</text>
+<rect x="379.0" y="65.5" width="48.7" height="45.4" fill="#e5e5e5"/>
+<rect x="385.8" y="108.7" width="35.0" height="137.3" fill="#e08a2c"><title>Apr 2026: 163 mm (normal 189)</title></rect>
+<line x1="379.0" x2="427.7" y1="87.2" y2="87.2" stroke="#222" stroke-width="2"/>
+<text x="403.3" y="262" text-anchor="middle" fill="#222">Apr</text>
+<rect x="433.7" y="101.1" width="48.7" height="60.7" fill="#e5e5e5"/>
+<rect x="440.5" y="156.9" width="35.0" height="89.1" fill="#e08a2c"><title>May 2026: 106 mm (normal 143)</title></rect>
+<line x1="433.7" x2="482.3" y1="126.0" y2="126.0" stroke="#222" stroke-width="2"/>
+<text x="458.0" y="262" text-anchor="middle" fill="#222">May</text>
+<rect x="488.3" y="186.8" width="48.7" height="36.1" fill="#e5e5e5"/>
+<rect x="495.2" y="217.4" width="35.0" height="28.6" fill="#e08a2c"><title>Jun 2026: 34 mm (normal 47)</title></rect>
+<line x1="488.3" x2="537.0" y1="206.7" y2="206.7" stroke="#222" stroke-width="2"/>
+<text x="512.7" y="262" text-anchor="middle" fill="#222">Jun</text>
+<rect x="543.0" y="223.0" width="48.7" height="9.7" fill="#e5e5e5"/>
+<rect x="549.8" y="234.2" width="35.0" height="11.8" fill="#e08a2c"><title>Jul 2026: 14 mm (normal 23)</title></rect>
+<line x1="543.0" x2="591.7" y1="226.8" y2="226.8" stroke="#222" stroke-width="2"/>
+<text x="567.3" y="262" text-anchor="middle" fill="#222">Jul</text>
+<rect x="597.7" y="209.0" width="48.7" height="17.7" fill="#e5e5e5"/>
+<rect x="604.5" y="231.5" width="35.0" height="14.5" fill="#e08a2c"><title>Aug 2026: 17 mm (normal 34)</title></rect>
+<line x1="597.7" x2="646.3" y1="217.0" y2="217.0" stroke="#222" stroke-width="2"/>
+<text x="622.0" y="262" text-anchor="middle" fill="#222">Aug</text>
+<rect x="652.3" y="163.8" width="48.7" height="30.8" fill="#e5e5e5"/>
+<rect x="659.2" y="197.2" width="35.0" height="48.8" fill="#e08a2c"><title>Sep 2026: 58 mm (normal 83)</title></rect>
+<line x1="652.3" x2="701.0" y1="175.9" y2="175.9" stroke="#222" stroke-width="2"/>
+<text x="676.7" y="262" text-anchor="middle" fill="#222">Sep</text>
+<rect x="48" y="284" width="12" height="12" fill="#e08a2c"/><text x="64" y="294" fill="#222">Measured rain (CHIRPS)</text>
+<rect x="227.2" y="284" width="12" height="12" fill="#e5e5e5"/><text x="243.2" y="294" fill="#222">Normal range (middle half of years)</text>
+<text x="704" y="294" text-anchor="end" fill="#222" font-size="11">— average</text>
+</svg>

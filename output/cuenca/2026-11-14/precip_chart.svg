@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" font-family="system-ui, sans-serif" font-size="12" role="img" aria-label="Daily rain: forecast vs normal, with airport rain reports">
+<rect width="720" height="320" fill="#fff"/>
+<line x1="48" x2="704" y1="250.0" y2="250.0" stroke="#e5e5e5"/><text x="42" y="254.0" text-anchor="end" fill="#555">0</text>
+<line x1="48" x2="704" y1="143.0" y2="143.0" stroke="#e5e5e5"/><text x="42" y="147.0" text-anchor="end" fill="#555">5</text>
+<line x1="48" x2="704" y1="36.0" y2="36.0" stroke="#e5e5e5"/><text x="42" y="40.0" text-anchor="end" fill="#555">10</text>
+<text x="8" y="24" fill="#222">mm</text>
+<rect x="57.4" y="48.8" width="35.5" height="201.2" fill="#2f6fb2"><title>9.4 mm</title></rect>
+<rect x="94.9" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="94.9" y="266" text-anchor="middle" fill="#222">Sat 07</text>
+<text x="94.9" y="282" text-anchor="middle" fill="#e08a2c" font-size="11">● rain</text>
+<rect x="151.1" y="215.8" width="35.5" height="34.2" fill="#2f6fb2"><title>1.6 mm</title></rect>
+<rect x="188.6" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="188.6" y="266" text-anchor="middle" fill="#222">Sun 08</text>
+<text x="188.6" y="282" text-anchor="middle" fill="#555" font-size="11">○ dry</text>
+<rect x="244.8" y="230.7" width="35.5" height="19.3" fill="#2f6fb2"><title>0.9 mm</title></rect>
+<rect x="282.3" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="282.3" y="266" text-anchor="middle" fill="#222">Mon 09</text>
+<text x="282.3" y="282" text-anchor="middle" fill="#e08a2c" font-size="11">● rain</text>
+<rect x="338.5" y="245.7" width="35.5" height="4.3" fill="#2f6fb2"><title>0.2 mm</title></rect>
+<rect x="376.0" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="376.0" y="266" text-anchor="middle" fill="#222">Tue 10</text>
+<text x="376.0" y="282" text-anchor="middle" fill="#555" font-size="11">○ dry</text>
+<rect x="432.2" y="217.9" width="35.5" height="32.1" fill="#2f6fb2"><title>1.5 mm</title></rect>
+<rect x="469.7" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="469.7" y="266" text-anchor="middle" fill="#222">Wed 11</text>
+<text x="469.7" y="282" text-anchor="middle" fill="#555" font-size="11">○ dry</text>
+<rect x="525.9" y="162.3" width="35.5" height="87.7" fill="#2f6fb2"><title>4.1 mm</title></rect>
+<rect x="563.4" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="563.4" y="266" text-anchor="middle" fill="#222">Thu 12</text>
+<text x="563.4" y="282" text-anchor="middle" fill="#555" font-size="11">○ dry</text>
+<rect x="619.7" y="149.4" width="35.5" height="100.6" fill="#2f6fb2"><title>4.7 mm</title></rect>
+<rect x="657.1" y="196.5" width="35.5" height="53.5" fill="#9a9a9a"><title>2.5 mm</title></rect>
+<text x="657.1" y="266" text-anchor="middle" fill="#222">Fri 13</text>
+<text x="657.1" y="282" text-anchor="middle" fill="#e08a2c" font-size="11">● rain</text>
+<rect x="48" y="300" width="12" height="12" fill="#2f6fb2"/><text x="64" y="310" fill="#222">Forecast, 1 day ahead</text>
+<rect x="220.6" y="300" width="12" height="12" fill="#9a9a9a"/><text x="236.6" y="310" fill="#222">Normal (CHIRPS 1991–2020)</text>
+<text x="704" y="310" text-anchor="end" fill="#555" font-size="11">airport: ● rain ○ dry</text>
+</svg>
